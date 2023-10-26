@@ -1,6 +1,9 @@
 import socket
 import threading
 import json
+import shutil
+import os
+
 # Server configuration
 HOST = '127.0.0.1' # Loopback address for localhost
 PORT = 12345 # Port to listen on
@@ -26,16 +29,40 @@ def handle_client(client_socket, client_address):
             if info_client["type"] == "connect":
                 name = payload["name"]
                 room = payload["room"]
-                print(payload)
+                connection = {"type": "connect_ack", "payload" : {"message" : name + " connected to the room: " + room}}
+                json_connection = json.dumps(connection)
                 for client in clients:
-                    connection = {"type": "connect_ack", "payload" : {"message" : name + " connected to the room: " + room}}
-                    json_connection = json.dumps(connection)
                     client.send(json_connection.encode('utf-8'))
 
             elif info_client["type"] == "message":
                 for client in clients:
                     client.send(message.encode('utf-8'))
+            elif info_client["type"] == "upload":
+                src = payload["src"]
+                dst = payload["dst"]
+                room = payload["room"]
+                uploader = payload["sender"]
+                name_file = payload["name_file"]
+                with open(dst, 'wb') as temp_file:
+                    shutil.copy(src,dst)
 
+                upload_complete = {"type": "message", "payload" : {"sender" : name, "room" : room, "text": "uploaded file " + name_file}}
+                upload_json = json.dumps(upload_complete)
+                for client in clients:
+                    client.send(upload_json.encode('utf-8'))
+            elif info_client["type"] == "download":
+                src = payload["src"]
+                dst = payload["dst"]
+                room = payload["room"]
+                receiver = payload["receiver"]
+                name_file = payload["name_file"]
+                with open(dst, 'wb') as temp_file:
+                    shutil.copy(src,dst)
+
+                download_complete = {"type": "message", "payload" : {"sender" : name, "room" : room, "text": name + " downloaded file " + name_file}}
+                upload_json = json.dumps(download_complete)
+                for client in clients:
+                    client.send(upload_json.encode('utf-8'))
         
     clients.remove(client_socket)
     client_socket.close()

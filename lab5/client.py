@@ -1,6 +1,10 @@
 import socket
 import threading
 import json
+import shutil
+import os
+from pathlib import Path
+
 
 HOST = '127.0.0.1'
 PORT = 12345
@@ -47,9 +51,29 @@ while True:
     if message.lower() == 'exit':
         break
     
-    formatted_message = {"type": "message", "payload" : {"sender" : name, "room" : room, "text": message}}
-    json_message = json.dumps(formatted_message)
-    client_socket.send(json_message.encode('utf-8'))
+    if(message.startswith("upload: ")):
+        pathv = message.removeprefix("upload: ")
+        file = Path(pathv)
+        src = pathv
+        name_file = os.path.basename(pathv)
+        dst = "C:/Users/ionva/OneDrive/Documents/Github/PR/lab5/SERVER_MEDIA/"+name_file
+        formatted_message = {"type": "upload", "payload" : {"sender" : name, "room" : room, "src": src, "dst": dst, "name_file": name_file}}
+        json_message = json.dumps(formatted_message)
+        client_socket.send(json_message.encode('utf-8'))
+
+    if(message.startswith("download: ")):
+        pathv = message.removeprefix("download: ")
+        name_file = os.path.basename(pathv)
+        src = "C:/Users/ionva/OneDrive/Documents/Github/PR/lab5/SERVER_MEDIA/"+name_file
+        dst = "C:/Users/ionva/Downloads/"+name_file
+        formatted_message = {"type": "download", "payload" : {"receiver" : name, "room" : room, "src":src, "dst": dst, "name_file": name_file}}
+        json_message = json.dumps(formatted_message)
+        client_socket.send(json_message.encode('utf-8'))
+
+    else:
+        formatted_message = {"type": "message", "payload" : {"sender" : name, "room" : room, "text": message}}
+        json_message = json.dumps(formatted_message)
+        client_socket.send(json_message.encode('utf-8'))
 
     
 
